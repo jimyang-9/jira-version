@@ -10,10 +10,9 @@ async function run(): Promise<void> {
       EMAIL,
       API_TOKEN
     )
-    core.debug(`versions: ${versions}`)
+
     const latestVersion = getLatestUnreleasedVersion(versions)
     if (!latestVersion) {
-      // TODO: is this okay?
       core.setFailed('Could not find latest unreleased version')
     }
 
