@@ -1,36 +1,5 @@
-import axios, {AxiosError, AxiosResponse} from 'axios'
-import * as core from '@actions/core'
+import axios, {AxiosError} from 'axios'
 import type {Version} from './models'
-
-// const replaceCircularThing = (key: string, value: unknown) => {
-//   if (key === 'circular key') {
-//     if (isGridChild(value)) {
-//       return `[GridChild[${value.value.id}]]`;
-//     }
-
-//     return `[Node[${value.value.id}]]`;
-//   }
-
-//   return value;
-// };
-
-// axios.interceptors.response.use(
-//   response => response,
-//   error => {
-//     console.log('error', error)
-//     try {
-//       if (
-//         error.status === 404 &&
-//         Array.isArray(error.response.data?.errorMessages)
-//       ) {
-//         return error.response.data?.errorMessages[0]
-//       }
-//       return error
-//     } catch (_) {
-//       return error
-//     }
-//   }
-// )
 
 export const getAllJiraVersions = async (
   domain: string,
@@ -64,8 +33,6 @@ export const getAllJiraVersions = async (
       throw error
     }
   }
-
-  // throw new Error(response.data?.errormessage ?? '')
 }
 
 export const getLatestUnreleasedVersion = (
