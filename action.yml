@@ -1,11 +1,19 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Latest Jira Version'
+description: 'Pulls the latest unreleased version for a given project from Jira'
+author: 'Jim Yang'
 inputs:
-  milliseconds: # change this
+  subdomain:
     required: true
-    description: 'input description here'
-    default: 'default value if applicable'
+    description: '{subdomain}.atlassian.com'
+  project:
+    required: true
+    description: Jira project id (i.e. ticket prefix)
+  email:
+    required: true
+    description: Email address associated with api token
+  apiToken:
+    required: true
+    description: Jira API token
 runs:
   using: 'node12'
   main: 'dist/index.js'
