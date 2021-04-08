@@ -23,5 +23,5 @@ jobs:
         with:
           subdomain: ${{ secrets.SUBDOMAIN }}
           project: ${{ secrets.PROJECT }}
-          email: ${{ secrest.EMAIL }}
+          email: ${{ secrets.EMAIL }}
           api-token: ${{ secrets.API_TOKEN }}
