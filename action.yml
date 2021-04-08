@@ -11,7 +11,7 @@ inputs:
   email:
     required: true
     description: Email address associated with api token
-  apiToken:
+  api-token:
     required: true
     description: Jira API token
 runs:
