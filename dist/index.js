@@ -140,9 +140,13 @@ function run() {
             if (!latestVersion) {
                 core.setFailed('Could not find latest unreleased version');
             }
+            core.startGroup('Latest Version');
             for (let key in latestVersion) {
-                core.setOutput(key, latestVersion[key]);
+                const value = latestVersion[key];
+                core.info(`${key}: ${value}`);
+                core.setOutput(key, value);
             }
+            core.endGroup();
         }
         catch (error) {
             core.setFailed(error.message);

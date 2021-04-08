@@ -12,13 +12,18 @@ async function run(): Promise<void> {
     )
 
     const latestVersion = getLatestUnreleasedVersion(versions)
+
     if (!latestVersion) {
       core.setFailed('Could not find latest unreleased version')
     }
 
+    core.startGroup('Latest Version')
     for (let key in latestVersion) {
-      core.setOutput(key, latestVersion[key as keyof typeof latestVersion])
+      const value = latestVersion[key as keyof typeof latestVersion]
+      core.info(`${key}: ${value}`)
+      core.setOutput(key, value)
     }
+    core.endGroup()
   } catch (error) {
     core.setFailed(error.message)
   }
