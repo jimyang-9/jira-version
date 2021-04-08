@@ -16,7 +16,9 @@ async function run(): Promise<void> {
       core.setFailed('Could not find latest unreleased version')
     }
 
-    core.setOutput('latest-version', latestVersion)
+    for (let key in latestVersion) {
+      core.setOutput(key, latestVersion[key as keyof typeof latestVersion])
+    }
   } catch (error) {
     core.setFailed(error.message)
   }

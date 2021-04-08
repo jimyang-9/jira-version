@@ -27,4 +27,4 @@ jobs:
           email: ${{ secrets.EMAIL }}
           api-token: ${{ secrets.API_TOKEN }}
       - name: 'Output fix version'
-        run: echo "Latest Version ${{ steps.get-version.outputs.latest-version }}"
+        run: echo "Latest Version ${{ steps.get-version.outputs.name }}"
