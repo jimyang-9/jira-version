@@ -1,4 +1,4 @@
-name: 'Latest Jira Version'
+name: 'jira-version'
 description: 'Pulls the latest unreleased version for a given project from Jira'
 author: 'Jim Yang'
 inputs:

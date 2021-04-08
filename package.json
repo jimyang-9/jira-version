@@ -1,6 +1,6 @@
 {
-  "name": "typescript-action",
-  "version": "0.0.0",
+  "name": "jira-version",
+  "version": "0.1.0",
   "private": true,
   "description": "TypeScript template action",
   "main": "lib/main.js",
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/actions/typescript-action.git"
+    "url": "git+https://github.com/jimyang-9/jira-version.git"
   },
   "keywords": [
     "actions",
     "node",
-    "setup"
+    "jira"
   ],
-  "author": "",
+  "author": "Jim Yang",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^1.2.6",
