@@ -1,6 +1,10 @@
 import * as core from '@actions/core'
-import {getAllJiraVersions, getLatestUnreleasedVersion} from './client'
-import {SUBDOMAIN, PROJECT, EMAIL, API_TOKEN} from './env'
+import {
+  getAllJiraVersions,
+  getLatestUnreleasedVersion,
+  getLatestVersion
+} from './client'
+import {SUBDOMAIN, PROJECT, EMAIL, API_TOKEN, UNRELEASED} from './env'
 
 async function run(): Promise<void> {
   try {
@@ -11,7 +15,9 @@ async function run(): Promise<void> {
       API_TOKEN
     )
 
-    const latestVersion = getLatestUnreleasedVersion(versions)
+    const latestVersion = UNRELEASED
+      ? getLatestUnreleasedVersion(versions)
+      : getLatestVersion(versions)
 
     if (!latestVersion) {
       core.setFailed('Could not find latest unreleased version')

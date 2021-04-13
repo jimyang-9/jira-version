@@ -42,5 +42,8 @@ export const getLatestUnreleasedVersion = (
   return latestVersion?.released === false ? latestVersion : null
 }
 
+export const getLatestVersion = (versions: Version[]): Version | null =>
+  versions[versions.length - 1]
+
 const isAxiosError = (error: any): error is AxiosError =>
   error?.isAxiosError ?? false

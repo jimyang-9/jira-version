@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLatestUnreleasedVersion = exports.getAllJiraVersions = void 0;
+exports.getLatestVersion = exports.getLatestUnreleasedVersion = exports.getAllJiraVersions = void 0;
 const axios_1 = __importDefault(__webpack_require__(6545));
 const getAllJiraVersions = (domain, project, email, apiToken) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
@@ -50,6 +50,8 @@ const getLatestUnreleasedVersion = (versions) => {
     return (latestVersion === null || latestVersion === void 0 ? void 0 : latestVersion.released) === false ? latestVersion : null;
 };
 exports.getLatestUnreleasedVersion = getLatestUnreleasedVersion;
+const getLatestVersion = (versions) => versions[versions.length - 1];
+exports.getLatestVersion = getLatestVersion;
 const isAxiosError = (error) => { var _a; return (_a = error === null || error === void 0 ? void 0 : error.isAxiosError) !== null && _a !== void 0 ? _a : false; };
 
 
@@ -83,7 +85,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.API_TOKEN = exports.EMAIL = exports.PROJECT = exports.SUBDOMAIN = void 0;
+exports.UNRELEASED = exports.API_TOKEN = exports.EMAIL = exports.PROJECT = exports.SUBDOMAIN = void 0;
 const core = __importStar(__webpack_require__(2186));
 const dotenv_1 = __importDefault(__webpack_require__(2437));
 dotenv_1.default.config();
@@ -91,6 +93,11 @@ exports.SUBDOMAIN = core.getInput('subdomain', { required: true });
 exports.PROJECT = core.getInput('project', { required: true });
 exports.EMAIL = core.getInput('email', { required: true });
 exports.API_TOKEN = core.getInput('api-token', { required: true });
+exports.UNRELEASED = core
+    .getInput('unreleased', {
+    required: false
+})
+    .toLowerCase() === 'true';
 
 
 /***/ }),
@@ -136,7 +143,9 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const versions = yield client_1.getAllJiraVersions(env_1.SUBDOMAIN, env_1.PROJECT, env_1.EMAIL, env_1.API_TOKEN);
-            const latestVersion = client_1.getLatestUnreleasedVersion(versions);
+            const latestVersion = env_1.UNRELEASED
+                ? client_1.getLatestUnreleasedVersion(versions)
+                : client_1.getLatestVersion(versions);
             if (!latestVersion) {
                 core.setFailed('Could not find latest unreleased version');
             }
