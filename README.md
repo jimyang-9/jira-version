@@ -1,105 +1,52 @@
-<p align="center">
-  <a href="https://github.com/actions/typescript-action/actions"><img alt="typescript-action status" src="https://github.com/actions/typescript-action/workflows/build-test/badge.svg"></a>
-</p>
+# Datadog Metrics Reporter Action
 
-# Create a JavaScript Action using TypeScript
+[![CI](https://github.com/jimyang-9/jira-version/actions/workflows/test.yml/badge.svg)](https://github.com/jimyang-9/jira-version/actions/workflows/test.yml) ![Package Version](https://img.shields.io/github/package-json/v/jimyang-9/jira-version)
 
-Use this template to bootstrap the creation of a TypeScript action.:rocket:
+Get latest Jira version (released or unreleased) for a project.
 
-This template includes compilation support, tests, a validation workflow, publishing, and versioning guidance.  
+## Usage
 
-If you are new, there's also a simpler introduction.  See the [Hello World JavaScript Action](https://github.com/actions/hello-world-javascript-action)
+This action gets the latest Jira version for a given Jira project. You can specify whether or not you want the latest unreleased version only.
 
-## Create an action from this template
+e.g.
 
-Click the `Use this Template` and provide the new repo details for your action
+```yml
+# ...
 
-## Code in Main
+jobs:
+  get-next-app-version:
+    name: Get App Version Number
+    runs-on: ubuntu-latest
+    outputs:
+      version-number: ${{ steps.get-version.outputs.name }}
+    steps:
+      - id: get-version
+        uses: jimyang-9/jira-version@v0.1.0
+        with:
+          project: ABC
+          subdomain: example
+          email: ${{ secrets.JIRA_EMAIL }}
+          api-token: ${{ secrets.JIRA_TOKEN }}
+          unreleased: true
 
-> First, you'll need to have a reasonably modern version of `node` handy. This won't work with versions older than 9, for instance.
-
-Install the dependencies  
-```bash
-$ npm install
+  do-something-with-version:
+    name: Build App
+    runs-un: ubuntu-latest
+    needs: get-app-version
+    steps:
+      - uses: foo/build-app
+        with:
+          version-number: ${{ needs.get-next-app-version.version-number }}
 ```
 
-Build the typescript and package it for distribution
-```bash
-$ npm run build && npm run package
-```
+### Inputs
 
-Run the tests :heavy_check_mark:  
-```bash
-$ npm test
+| Name                    | Description                                                                                                                                                                |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `project`               | The Jira project id or key (see projectIdOrKey in the [documentation](https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/#version))                         |
+| `subdomain`             | The subdomain of your Jira instance (see site-url in the [documentation](https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/#version))                      |
+| `email`                 | Email address associated with api-token (see [basic authentication](https://developer.atlassian.com/server/jira/platform/basic-authentication/) documentation for details) |
+| `api-token`             | Api token associated with email address (see [basic authentication](https://developer.atlassian.com/server/jira/platform/basic-authentication/) documentation for details) |
+| `unreleased` (optional) | Determines whether or not to restrict the latest version to unreleased versions only                                                                                       |
 
- PASS  ./index.test.js
-  ✓ throws invalid number (3ms)
-  ✓ wait 500 ms (504ms)
-  ✓ test runs (95ms)
-
-...
-```
-
-## Change action.yml
-
-The action.yml contains defines the inputs and output for your action.
-
-Update the action.yml with your name, description, inputs and outputs for your action.
-
-See the [documentation](https://help.github.com/en/articles/metadata-syntax-for-github-actions)
-
-## Change the Code
-
-Most toolkit and CI/CD operations involve async operations so the action is run in an async function.
-
-```javascript
-import * as core from '@actions/core';
-...
-
-async function run() {
-  try { 
-      ...
-  } 
-  catch (error) {
-    core.setFailed(error.message);
-  }
-}
-
-run()
-```
-
-See the [toolkit documentation](https://github.com/actions/toolkit/blob/master/README.md#packages) for the various packages.
-
-## Publish to a distribution branch
-
-Actions are run from GitHub repos so we will checkin the packed dist folder. 
-
-Then run [ncc](https://github.com/zeit/ncc) and push the results:
-```bash
-$ npm run package
-$ git add dist
-$ git commit -a -m "prod dependencies"
-$ git push origin releases/v1
-```
-
-Note: We recommend using the `--license` option for ncc, which will create a license file for all of the production node modules used in your project.
-
-Your action is now published! :rocket: 
-
-See the [versioning documentation](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-
-## Validate
-
-You can now validate the action by referencing `./` in a workflow in your repo (see [test.yml](.github/workflows/test.yml))
-
-```yaml
-uses: ./
-with:
-  milliseconds: 1000
-```
-
-See the [actions tab](https://github.com/actions/typescript-action/actions) for runs of this action! :rocket:
-
-## Usage:
-
-After testing you can [create a v1 tag](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md) to reference the stable and latest V1 action
+For more info: https://developer.atlassian.com/cloud/jira/platform/rest/v3/api-group-project-versions/#api-rest-api-3-project-projectidorkey-version-get
