@@ -16,8 +16,12 @@ inputs:
     description: Jira API token
   unreleased:
     required: false
-    description: Pulls the latest unreleased version only
+    description: Pulls unreleased versions only
     default: 'false'
+  latest:
+    required: false
+    description: Pulls the latest unreleased version only
+    default: 'true'
 runs:
   using: 'node12'
   main: 'dist/index.js'
