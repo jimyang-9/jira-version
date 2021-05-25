@@ -1,4 +1,4 @@
-import {getAllJiraVersions, getLatestUnreleasedVersion} from '../src/client'
+import {getAllJiraVersions, getUnreleasedVersion} from '../src/client'
 import {rest} from 'msw'
 import {setupServer} from 'msw/node'
 import {GOOD_RESPONSE, AUTH_ERROR, NO_UNRELEASED_VERSION} from '../src/mocks'
@@ -54,8 +54,8 @@ describe('getAllJiraVersions', () => {
 })
 
 describe('getLatestUnreleasedVersion', () => {
-  it('returns the latest unreleased version', () => {
-    expect(getLatestUnreleasedVersion(GOOD_RESPONSE)).toEqual({
+  it('returns the next unreleased version', () => {
+    expect(getUnreleasedVersion(GOOD_RESPONSE, {latest:false})).toEqual({
       self: 'https://foo.atlassian.net/rest/api/3/version/2',
       id: '2',
       description: 'Small fixes to improve MVP app',
@@ -66,9 +66,24 @@ describe('getLatestUnreleasedVersion', () => {
       overdue: false,
       userReleaseDate: '07/Apr/21',
       projectId: 123
+    },)
+  })
+  it('returns the latest unreleased version', () => {
+    expect(getUnreleasedVersion(GOOD_RESPONSE, {latest:true})).toEqual({
+      self: 'https://foo.atlassian.net/rest/api/3/version/2',
+      id: '3',
+      description: 'Small fixes to improve MVP app',
+      name: '1.0.2',
+      archived: false,
+      released: false,
+      releaseDate: '2021-04-08',
+      overdue: false,
+      userReleaseDate: '07/Apr/21',
+      projectId: 123
     })
   })
+
   it('returns null if there is no unreleased version', () => {
-    expect(getLatestUnreleasedVersion(NO_UNRELEASED_VERSION)).toEqual(null)
+    expect(getUnreleasedVersion(NO_UNRELEASED_VERSION, {latest:true})).toEqual(null)
   })
 })

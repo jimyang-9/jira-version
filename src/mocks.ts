@@ -22,6 +22,18 @@ export const GOOD_RESPONSE = [
     overdue: false,
     userReleaseDate: '07/Apr/21',
     projectId: 123
+  },
+  {
+    self: 'https://foo.atlassian.net/rest/api/3/version/2',
+    id: '3',
+    description: 'Small fixes to improve MVP app',
+    name: '1.0.2',
+    archived: false,
+    released: false,
+    releaseDate: '2021-04-08',
+    overdue: false,
+    userReleaseDate: '07/Apr/21',
+    projectId: 123
   }
 ]
 

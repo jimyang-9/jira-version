@@ -36,12 +36,12 @@ export const getAllJiraVersions = async (
   }
 }
 
-export const getLatestUnreleasedVersion = (
-  versions: Version[]
+export const getUnreleasedVersion = (
+  versions: Version[], {latest = true}
 ): Version | null => {
   const unreleasedVersion = versions.filter((v) => !v.released);
-  const latestVersion = unreleasedVersion[unreleasedVersion.length - 1];
-  return latestVersion;
+  const latestVersion = unreleasedVersion[latest ? unreleasedVersion.length - 1 : 0];
+  return latestVersion == undefined ? null : latestVersion;
 }
 
 export const getLatestVersion = (versions: Version[]): Version | null =>
