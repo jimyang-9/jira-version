@@ -20,7 +20,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getLatestVersion = exports.getLatestUnreleasedVersion = exports.getAllJiraVersions = void 0;
+exports.getLatestVersion = exports.getUnreleasedVersion = exports.getAllJiraVersions = void 0;
 const axios_1 = __importDefault(__webpack_require__(6545));
 const getAllJiraVersions = (domain, project, email, apiToken) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c;
@@ -45,11 +45,12 @@ const getAllJiraVersions = (domain, project, email, apiToken) => __awaiter(void 
     }
 });
 exports.getAllJiraVersions = getAllJiraVersions;
-const getLatestUnreleasedVersion = (versions) => {
-    const latestVersion = versions[versions.length - 1];
-    return (latestVersion === null || latestVersion === void 0 ? void 0 : latestVersion.released) === false ? latestVersion : null;
+const getUnreleasedVersion = (versions, latest) => {
+    const unreleasedVersion = versions.filter((v) => !v.released);
+    const latestVersion = unreleasedVersion[latest ? unreleasedVersion.length - 1 : 0];
+    return latestVersion == undefined ? null : latestVersion;
 };
-exports.getLatestUnreleasedVersion = getLatestUnreleasedVersion;
+exports.getUnreleasedVersion = getUnreleasedVersion;
 const getLatestVersion = (versions) => versions[versions.length - 1];
 exports.getLatestVersion = getLatestVersion;
 const isAxiosError = (error) => { var _a; return (_a = error === null || error === void 0 ? void 0 : error.isAxiosError) !== null && _a !== void 0 ? _a : false; };
@@ -85,7 +86,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.UNRELEASED = exports.API_TOKEN = exports.EMAIL = exports.PROJECT = exports.SUBDOMAIN = void 0;
+exports.LATEST = exports.UNRELEASED = exports.API_TOKEN = exports.EMAIL = exports.PROJECT = exports.SUBDOMAIN = void 0;
 const core = __importStar(__webpack_require__(2186));
 const dotenv_1 = __importDefault(__webpack_require__(2437));
 dotenv_1.default.config();
@@ -95,6 +96,11 @@ exports.EMAIL = core.getInput('email', { required: true });
 exports.API_TOKEN = core.getInput('api-token', { required: true });
 exports.UNRELEASED = core
     .getInput('unreleased', {
+    required: false
+})
+    .toLowerCase() === 'true';
+exports.LATEST = core
+    .getInput('latest', {
     required: false
 })
     .toLowerCase() === 'true';
@@ -144,7 +150,7 @@ function run() {
         try {
             const versions = yield client_1.getAllJiraVersions(env_1.SUBDOMAIN, env_1.PROJECT, env_1.EMAIL, env_1.API_TOKEN);
             const latestVersion = env_1.UNRELEASED
-                ? client_1.getLatestUnreleasedVersion(versions)
+                ? client_1.getUnreleasedVersion(versions, env_1.LATEST)
                 : client_1.getLatestVersion(versions);
             if (!latestVersion) {
                 core.setFailed('Could not find latest unreleased version');
@@ -155,6 +161,7 @@ function run() {
                 core.info(`${key}: ${value}`);
                 core.setOutput(key, value);
             }
+            core.info(`verisons found: ${versions.length}`);
             core.endGroup();
         }
         catch (error) {
@@ -2631,21 +2638,12 @@ module.exports = {
  * This is the web browser implementation of `debug()`.
  */
 
+exports.log = log;
 exports.formatArgs = formatArgs;
 exports.save = save;
 exports.load = load;
 exports.useColors = useColors;
 exports.storage = localstorage();
-exports.destroy = (() => {
-	let warned = false;
-
-	return () => {
-		if (!warned) {
-			warned = true;
-			console.warn('Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.');
-		}
-	};
-})();
 
 /**
  * Colors.
@@ -2806,14 +2804,18 @@ function formatArgs(args) {
 }
 
 /**
- * Invokes `console.debug()` when available.
- * No-op when `console.debug` is not a "function".
- * If `console.debug` is not available, falls back
- * to `console.log`.
+ * Invokes `console.log()` when available.
+ * No-op when `console.log` is not a "function".
  *
  * @api public
  */
-exports.log = console.debug || console.log || (() => {});
+function log(...args) {
+	// This hackery is required for IE8/9, where
+	// the `console.log` function doesn't have 'apply'
+	return typeof console === 'object' &&
+		console.log &&
+		console.log(...args);
+}
 
 /**
  * Save `namespaces`.
@@ -2915,11 +2917,15 @@ function setup(env) {
 	createDebug.enable = enable;
 	createDebug.enabled = enabled;
 	createDebug.humanize = __webpack_require__(900);
-	createDebug.destroy = destroy;
 
 	Object.keys(env).forEach(key => {
 		createDebug[key] = env[key];
 	});
+
+	/**
+	* Active `debug` instances.
+	*/
+	createDebug.instances = [];
 
 	/**
 	* The currently active debug mode names, and names to skip.
@@ -2962,7 +2968,6 @@ function setup(env) {
 	*/
 	function createDebug(namespace) {
 		let prevTime;
-		let enableOverride = null;
 
 		function debug(...args) {
 			// Disabled?
@@ -2992,7 +2997,7 @@ function setup(env) {
 			args[0] = args[0].replace(/%([a-zA-Z%])/g, (match, format) => {
 				// If we encounter an escaped % then don't increase the array index
 				if (match === '%%') {
-					return '%';
+					return match;
 				}
 				index++;
 				const formatter = createDebug.formatters[format];
@@ -3015,26 +3020,31 @@ function setup(env) {
 		}
 
 		debug.namespace = namespace;
+		debug.enabled = createDebug.enabled(namespace);
 		debug.useColors = createDebug.useColors();
-		debug.color = createDebug.selectColor(namespace);
+		debug.color = selectColor(namespace);
+		debug.destroy = destroy;
 		debug.extend = extend;
-		debug.destroy = createDebug.destroy; // XXX Temporary. Will be removed in the next major release.
+		// Debug.formatArgs = formatArgs;
+		// debug.rawLog = rawLog;
 
-		Object.defineProperty(debug, 'enabled', {
-			enumerable: true,
-			configurable: false,
-			get: () => enableOverride === null ? createDebug.enabled(namespace) : enableOverride,
-			set: v => {
-				enableOverride = v;
-			}
-		});
-
-		// Env-specific initialization logic for debug instances
+		// env-specific initialization logic for debug instances
 		if (typeof createDebug.init === 'function') {
 			createDebug.init(debug);
 		}
 
+		createDebug.instances.push(debug);
+
 		return debug;
+	}
+
+	function destroy() {
+		const index = createDebug.instances.indexOf(this);
+		if (index !== -1) {
+			createDebug.instances.splice(index, 1);
+			return true;
+		}
+		return false;
 	}
 
 	function extend(namespace, delimiter) {
@@ -3073,6 +3083,11 @@ function setup(env) {
 			} else {
 				createDebug.names.push(new RegExp('^' + namespaces + '$'));
 			}
+		}
+
+		for (i = 0; i < createDebug.instances.length; i++) {
+			const instance = createDebug.instances[i];
+			instance.enabled = createDebug.enabled(instance.namespace);
 		}
 	}
 
@@ -3148,14 +3163,6 @@ function setup(env) {
 		return val;
 	}
 
-	/**
-	* XXX DO NOT USE. This is a temporary stub function.
-	* XXX It WILL be removed in the next major release.
-	*/
-	function destroy() {
-		console.warn('Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.');
-	}
-
 	createDebug.enable(createDebug.load());
 
 	return createDebug;
@@ -3203,10 +3210,6 @@ exports.formatArgs = formatArgs;
 exports.save = save;
 exports.load = load;
 exports.useColors = useColors;
-exports.destroy = util.deprecate(
-	() => {},
-	'Instance method `debug.destroy()` is deprecated and no longer does anything. It will be removed in the next major version of `debug`.'
-);
 
 /**
  * Colors.
@@ -3436,9 +3439,7 @@ const {formatters} = module.exports;
 formatters.o = function (v) {
 	this.inspectOpts.colors = this.useColors;
 	return util.inspect(v, this.inspectOpts)
-		.split('\n')
-		.map(str => str.trim())
-		.join(' ');
+		.replace(/\s*\n\s*/g, ' ');
 };
 
 /**
@@ -4131,12 +4132,12 @@ module.exports.wrap = wrap;
 
 "use strict";
 
-
-module.exports = (flag, argv = process.argv) => {
+module.exports = (flag, argv) => {
+	argv = argv || process.argv;
 	const prefix = flag.startsWith('-') ? '' : (flag.length === 1 ? '-' : '--');
-	const position = argv.indexOf(prefix + flag);
-	const terminatorPosition = argv.indexOf('--');
-	return position !== -1 && (terminatorPosition === -1 || position < terminatorPosition);
+	const pos = argv.indexOf(prefix + flag);
+	const terminatorPos = argv.indexOf('--');
+	return pos !== -1 && (terminatorPos === -1 ? true : pos < terminatorPos);
 };
 
 
@@ -4317,32 +4318,23 @@ function plural(ms, msAbs, n, name) {
 "use strict";
 
 const os = __webpack_require__(2087);
-const tty = __webpack_require__(3867);
 const hasFlag = __webpack_require__(1621);
 
-const {env} = process;
+const env = process.env;
 
 let forceColor;
 if (hasFlag('no-color') ||
 	hasFlag('no-colors') ||
-	hasFlag('color=false') ||
-	hasFlag('color=never')) {
-	forceColor = 0;
+	hasFlag('color=false')) {
+	forceColor = false;
 } else if (hasFlag('color') ||
 	hasFlag('colors') ||
 	hasFlag('color=true') ||
 	hasFlag('color=always')) {
-	forceColor = 1;
+	forceColor = true;
 }
-
 if ('FORCE_COLOR' in env) {
-	if (env.FORCE_COLOR === 'true') {
-		forceColor = 1;
-	} else if (env.FORCE_COLOR === 'false') {
-		forceColor = 0;
-	} else {
-		forceColor = env.FORCE_COLOR.length === 0 ? 1 : Math.min(parseInt(env.FORCE_COLOR, 10), 3);
-	}
+	forceColor = env.FORCE_COLOR.length === 0 || parseInt(env.FORCE_COLOR, 10) !== 0;
 }
 
 function translateLevel(level) {
@@ -4358,8 +4350,8 @@ function translateLevel(level) {
 	};
 }
 
-function supportsColor(haveStream, streamIsTTY) {
-	if (forceColor === 0) {
+function supportsColor(stream) {
+	if (forceColor === false) {
 		return 0;
 	}
 
@@ -4373,21 +4365,22 @@ function supportsColor(haveStream, streamIsTTY) {
 		return 2;
 	}
 
-	if (haveStream && !streamIsTTY && forceColor === undefined) {
+	if (stream && !stream.isTTY && forceColor !== true) {
 		return 0;
 	}
 
-	const min = forceColor || 0;
-
-	if (env.TERM === 'dumb') {
-		return min;
-	}
+	const min = forceColor ? 1 : 0;
 
 	if (process.platform === 'win32') {
-		// Windows 10 build 10586 is the first Windows release that supports 256 colors.
-		// Windows 10 build 14931 is the first release that supports 16m/TrueColor.
+		// Node.js 7.5.0 is the first version of Node.js to include a patch to
+		// libuv that enables 256 color output on Windows. Anything earlier and it
+		// won't work. However, here we target Node.js 8 at minimum as it is an LTS
+		// release, and Node.js 7 is not. Windows 10 build 10586 is the first Windows
+		// release that supports 256 colors. Windows 10 build 14931 is the first release
+		// that supports 16m/TrueColor.
 		const osRelease = os.release().split('.');
 		if (
+			Number(process.versions.node.split('.')[0]) >= 8 &&
 			Number(osRelease[0]) >= 10 &&
 			Number(osRelease[2]) >= 10586
 		) {
@@ -4398,7 +4391,7 @@ function supportsColor(haveStream, streamIsTTY) {
 	}
 
 	if ('CI' in env) {
-		if (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI', 'GITHUB_ACTIONS', 'BUILDKITE'].some(sign => sign in env) || env.CI_NAME === 'codeship') {
+		if (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI'].some(sign => sign in env) || env.CI_NAME === 'codeship') {
 			return 1;
 		}
 
@@ -4437,18 +4430,22 @@ function supportsColor(haveStream, streamIsTTY) {
 		return 1;
 	}
 
+	if (env.TERM === 'dumb') {
+		return min;
+	}
+
 	return min;
 }
 
 function getSupportLevel(stream) {
-	const level = supportsColor(stream, stream && stream.isTTY);
+	const level = supportsColor(stream);
 	return translateLevel(level);
 }
 
 module.exports = {
 	supportsColor: getSupportLevel,
-	stdout: translateLevel(supportsColor(true, tty.isatty(1))),
-	stderr: translateLevel(supportsColor(true, tty.isatty(2)))
+	stdout: getSupportLevel(process.stdout),
+	stderr: getSupportLevel(process.stderr)
 };
 
 
@@ -4458,7 +4455,7 @@ module.exports = {
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse("{\"name\":\"axios\",\"version\":\"0.21.1\",\"description\":\"Promise based HTTP client for the browser and node.js\",\"main\":\"index.js\",\"scripts\":{\"test\":\"grunt test && bundlesize\",\"start\":\"node ./sandbox/server.js\",\"build\":\"NODE_ENV=production grunt build\",\"preversion\":\"npm test\",\"version\":\"npm run build && grunt version && git add -A dist && git add CHANGELOG.md bower.json package.json\",\"postversion\":\"git push && git push --tags\",\"examples\":\"node ./examples/server.js\",\"coveralls\":\"cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js\",\"fix\":\"eslint --fix lib/**/*.js\"},\"repository\":{\"type\":\"git\",\"url\":\"https://github.com/axios/axios.git\"},\"keywords\":[\"xhr\",\"http\",\"ajax\",\"promise\",\"node\"],\"author\":\"Matt Zabriskie\",\"license\":\"MIT\",\"bugs\":{\"url\":\"https://github.com/axios/axios/issues\"},\"homepage\":\"https://github.com/axios/axios\",\"devDependencies\":{\"bundlesize\":\"^0.17.0\",\"coveralls\":\"^3.0.0\",\"es6-promise\":\"^4.2.4\",\"grunt\":\"^1.0.2\",\"grunt-banner\":\"^0.6.0\",\"grunt-cli\":\"^1.2.0\",\"grunt-contrib-clean\":\"^1.1.0\",\"grunt-contrib-watch\":\"^1.0.0\",\"grunt-eslint\":\"^20.1.0\",\"grunt-karma\":\"^2.0.0\",\"grunt-mocha-test\":\"^0.13.3\",\"grunt-ts\":\"^6.0.0-beta.19\",\"grunt-webpack\":\"^1.0.18\",\"istanbul-instrumenter-loader\":\"^1.0.0\",\"jasmine-core\":\"^2.4.1\",\"karma\":\"^1.3.0\",\"karma-chrome-launcher\":\"^2.2.0\",\"karma-coverage\":\"^1.1.1\",\"karma-firefox-launcher\":\"^1.1.0\",\"karma-jasmine\":\"^1.1.1\",\"karma-jasmine-ajax\":\"^0.1.13\",\"karma-opera-launcher\":\"^1.0.0\",\"karma-safari-launcher\":\"^1.0.0\",\"karma-sauce-launcher\":\"^1.2.0\",\"karma-sinon\":\"^1.0.5\",\"karma-sourcemap-loader\":\"^0.3.7\",\"karma-webpack\":\"^1.7.0\",\"load-grunt-tasks\":\"^3.5.2\",\"minimist\":\"^1.2.0\",\"mocha\":\"^5.2.0\",\"sinon\":\"^4.5.0\",\"typescript\":\"^2.8.1\",\"url-search-params\":\"^0.10.0\",\"webpack\":\"^1.13.1\",\"webpack-dev-server\":\"^1.14.1\"},\"browser\":{\"./lib/adapters/http.js\":\"./lib/adapters/xhr.js\"},\"jsdelivr\":\"dist/axios.min.js\",\"unpkg\":\"dist/axios.min.js\",\"typings\":\"./index.d.ts\",\"dependencies\":{\"follow-redirects\":\"^1.10.0\"},\"bundlesize\":[{\"path\":\"./dist/axios.min.js\",\"threshold\":\"5kB\"}]}");
+module.exports = JSON.parse("{\"_args\":[[\"axios@0.21.1\",\"C:\\\\Users\\\\andre\\\\Projects\\\\withwise\\\\jira-version\"]],\"_from\":\"axios@0.21.1\",\"_id\":\"axios@0.21.1\",\"_inBundle\":false,\"_integrity\":\"sha512-dKQiRHxGD9PPRIUNIWvZhPTPpl1rf/OxTYKsqKUDjBwYylTvV7SjSHJb9ratfyzM6wCdLCOYLzs73qpg5c4iGA==\",\"_location\":\"/axios\",\"_phantomChildren\":{},\"_requested\":{\"type\":\"version\",\"registry\":true,\"raw\":\"axios@0.21.1\",\"name\":\"axios\",\"escapedName\":\"axios\",\"rawSpec\":\"0.21.1\",\"saveSpec\":null,\"fetchSpec\":\"0.21.1\"},\"_requiredBy\":[\"/\"],\"_resolved\":\"https://registry.npmjs.org/axios/-/axios-0.21.1.tgz\",\"_spec\":\"0.21.1\",\"_where\":\"C:\\\\Users\\\\andre\\\\Projects\\\\withwise\\\\jira-version\",\"author\":{\"name\":\"Matt Zabriskie\"},\"browser\":{\"./lib/adapters/http.js\":\"./lib/adapters/xhr.js\"},\"bugs\":{\"url\":\"https://github.com/axios/axios/issues\"},\"bundlesize\":[{\"path\":\"./dist/axios.min.js\",\"threshold\":\"5kB\"}],\"dependencies\":{\"follow-redirects\":\"^1.10.0\"},\"description\":\"Promise based HTTP client for the browser and node.js\",\"devDependencies\":{\"bundlesize\":\"^0.17.0\",\"coveralls\":\"^3.0.0\",\"es6-promise\":\"^4.2.4\",\"grunt\":\"^1.0.2\",\"grunt-banner\":\"^0.6.0\",\"grunt-cli\":\"^1.2.0\",\"grunt-contrib-clean\":\"^1.1.0\",\"grunt-contrib-watch\":\"^1.0.0\",\"grunt-eslint\":\"^20.1.0\",\"grunt-karma\":\"^2.0.0\",\"grunt-mocha-test\":\"^0.13.3\",\"grunt-ts\":\"^6.0.0-beta.19\",\"grunt-webpack\":\"^1.0.18\",\"istanbul-instrumenter-loader\":\"^1.0.0\",\"jasmine-core\":\"^2.4.1\",\"karma\":\"^1.3.0\",\"karma-chrome-launcher\":\"^2.2.0\",\"karma-coverage\":\"^1.1.1\",\"karma-firefox-launcher\":\"^1.1.0\",\"karma-jasmine\":\"^1.1.1\",\"karma-jasmine-ajax\":\"^0.1.13\",\"karma-opera-launcher\":\"^1.0.0\",\"karma-safari-launcher\":\"^1.0.0\",\"karma-sauce-launcher\":\"^1.2.0\",\"karma-sinon\":\"^1.0.5\",\"karma-sourcemap-loader\":\"^0.3.7\",\"karma-webpack\":\"^1.7.0\",\"load-grunt-tasks\":\"^3.5.2\",\"minimist\":\"^1.2.0\",\"mocha\":\"^5.2.0\",\"sinon\":\"^4.5.0\",\"typescript\":\"^2.8.1\",\"url-search-params\":\"^0.10.0\",\"webpack\":\"^1.13.1\",\"webpack-dev-server\":\"^1.14.1\"},\"homepage\":\"https://github.com/axios/axios\",\"jsdelivr\":\"dist/axios.min.js\",\"keywords\":[\"xhr\",\"http\",\"ajax\",\"promise\",\"node\"],\"license\":\"MIT\",\"main\":\"index.js\",\"name\":\"axios\",\"repository\":{\"type\":\"git\",\"url\":\"git+https://github.com/axios/axios.git\"},\"scripts\":{\"build\":\"NODE_ENV=production grunt build\",\"coveralls\":\"cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js\",\"examples\":\"node ./examples/server.js\",\"fix\":\"eslint --fix lib/**/*.js\",\"postversion\":\"git push && git push --tags\",\"preversion\":\"npm test\",\"start\":\"node ./sandbox/server.js\",\"test\":\"grunt test && bundlesize\",\"version\":\"npm run build && grunt version && git add -A dist && git add CHANGELOG.md bower.json package.json\"},\"typings\":\"./index.d.ts\",\"unpkg\":\"dist/axios.min.js\",\"version\":\"0.21.1\"}");
 
 /***/ }),
 

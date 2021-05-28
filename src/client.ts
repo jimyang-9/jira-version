@@ -1,5 +1,6 @@
 import axios, {AxiosError} from 'axios'
 import type {Version} from './models'
+import * as core from '@actions/core'
 
 export const getAllJiraVersions = async (
   domain: string,
@@ -35,11 +36,12 @@ export const getAllJiraVersions = async (
   }
 }
 
-export const getLatestUnreleasedVersion = (
-  versions: Version[]
+export const getUnreleasedVersion = (
+  versions: Version[],latest:boolean
 ): Version | null => {
-  const latestVersion = versions[versions.length - 1]
-  return latestVersion?.released === false ? latestVersion : null
+  const unreleasedVersion = versions.filter((v) => !v.released);
+  const latestVersion = unreleasedVersion[latest ? unreleasedVersion.length - 1 : 0];
+  return latestVersion == undefined ? null : latestVersion;
 }
 
 export const getLatestVersion = (versions: Version[]): Version | null =>

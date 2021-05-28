@@ -12,3 +12,10 @@ export const UNRELEASED: boolean =
       required: false
     })
     .toLowerCase() === 'true'
+
+export const LATEST: boolean =
+  core
+    .getInput('latest', {
+      required: false
+    })
+    .toLowerCase() === 'true'

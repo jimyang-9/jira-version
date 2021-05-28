@@ -1,10 +1,10 @@
 import * as core from '@actions/core'
 import {
   getAllJiraVersions,
-  getLatestUnreleasedVersion,
+  getUnreleasedVersion,
   getLatestVersion
 } from './client'
-import {SUBDOMAIN, PROJECT, EMAIL, API_TOKEN, UNRELEASED} from './env'
+import {SUBDOMAIN, PROJECT, EMAIL, API_TOKEN, UNRELEASED, LATEST} from './env'
 
 async function run(): Promise<void> {
   try {
@@ -16,7 +16,7 @@ async function run(): Promise<void> {
     )
 
     const latestVersion = UNRELEASED
-      ? getLatestUnreleasedVersion(versions)
+      ? getUnreleasedVersion(versions, LATEST)
       : getLatestVersion(versions)
 
     if (!latestVersion) {
@@ -29,6 +29,8 @@ async function run(): Promise<void> {
       core.info(`${key}: ${value}`)
       core.setOutput(key, value)
     }
+    core.info(`verisons found: ${versions.length}`)
+
     core.endGroup()
   } catch (error) {
     core.setFailed(error.message)
