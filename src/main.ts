@@ -16,7 +16,7 @@ async function run(): Promise<void> {
     )
 
     const latestVersion = UNRELEASED
-      ? getUnreleasedVersion(versions, {latest:LATEST})
+      ? getUnreleasedVersion(versions, LATEST)
       : getLatestVersion(versions)
 
     if (!latestVersion) {
@@ -29,6 +29,8 @@ async function run(): Promise<void> {
       core.info(`${key}: ${value}`)
       core.setOutput(key, value)
     }
+    core.info(`verisons found: ${versions.length}`)
+
     core.endGroup()
   } catch (error) {
     core.setFailed(error.message)

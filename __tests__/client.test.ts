@@ -1,7 +1,7 @@
 import {getAllJiraVersions, getUnreleasedVersion} from '../src/client'
 import {rest} from 'msw'
 import {setupServer} from 'msw/node'
-import {GOOD_RESPONSE, AUTH_ERROR, NO_UNRELEASED_VERSION} from '../src/mocks'
+import {GOOD_RESPONSE, AUTH_ERROR, NO_UNRELEASED_VERSION, UNRELEASED_VERSIONS} from '../src/mocks'
 
 const WORKING_PROJECT = 'some-project-id'
 const SUBDOMAIN = 'a-cool-subdomain'
@@ -55,35 +55,34 @@ describe('getAllJiraVersions', () => {
 
 describe('getLatestUnreleasedVersion', () => {
   it('returns the next unreleased version', () => {
-    expect(getUnreleasedVersion(GOOD_RESPONSE, {latest:false})).toEqual({
-      self: 'https://foo.atlassian.net/rest/api/3/version/2',
-      id: '2',
-      description: 'Small fixes to improve MVP app',
-      name: '1.0.1',
+    expect(getUnreleasedVersion(UNRELEASED_VERSIONS, false)).toEqual({
+      self: 'https://foo.atlassian.net/rest/api/3/version/1',
+      id: '1',
+      name: '1.5.1',
       archived: false,
       released: false,
-      releaseDate: '2021-04-08',
-      overdue: false,
-      userReleaseDate: '07/Apr/21',
+      startDate: '2020-10-01',
+      releaseDate: '2021-01-08',
+      userStartDate: '30/Sep/20',
+      userReleaseDate: '07/Jan/21',
       projectId: 123
     },)
   })
   it('returns the latest unreleased version', () => {
-    expect(getUnreleasedVersion(GOOD_RESPONSE, {latest:true})).toEqual({
+    expect(getUnreleasedVersion(UNRELEASED_VERSIONS, true)).toEqual({
       self: 'https://foo.atlassian.net/rest/api/3/version/2',
-      id: '3',
+      id: '2',
       description: 'Small fixes to improve MVP app',
-      name: '1.0.2',
+      name: '1.5.0',
       archived: false,
       released: false,
       releaseDate: '2021-04-08',
       overdue: false,
       userReleaseDate: '07/Apr/21',
-      projectId: 123
+      projectId: 14035
     })
   })
-
   it('returns null if there is no unreleased version', () => {
-    expect(getUnreleasedVersion(NO_UNRELEASED_VERSION, {latest:true})).toEqual(null)
+    expect(getUnreleasedVersion(NO_UNRELEASED_VERSION, true)).toEqual(null)
   })
 })

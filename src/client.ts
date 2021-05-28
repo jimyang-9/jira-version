@@ -37,7 +37,7 @@ export const getAllJiraVersions = async (
 }
 
 export const getUnreleasedVersion = (
-  versions: Version[], {latest = true}
+  versions: Version[],latest:boolean
 ): Version | null => {
   const unreleasedVersion = versions.filter((v) => !v.released);
   const latestVersion = unreleasedVersion[latest ? unreleasedVersion.length - 1 : 0];
